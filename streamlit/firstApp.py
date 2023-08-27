@@ -23,7 +23,6 @@ import pandas as pd
 
 conn = st.experimental_connection('oz_curriculum_db', type="sql")
 
-conn
 
 st.markdown("# Main page")
 st.sidebar.markdown("# Main page")
@@ -31,3 +30,8 @@ st.sidebar.markdown("# Main page")
 add_text = st.sidebar.text_input("Your name", key="name")
 
 st.write("Hello " + st.session_state.name )
+
+with conn.session as s:
+
+    for row in s.execute("SELECT * from content_descriptors"):
+        st.write(row)

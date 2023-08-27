@@ -8,6 +8,7 @@ __pycache__/
 
 # sqlite databases
 *.db
+.DS_Store
 
 # Distribution / packaging
 .Python
