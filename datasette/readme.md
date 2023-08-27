@@ -15,3 +15,16 @@
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 
+# Datasette
+
+Explorations of the data using datasette
+
+## Create oz_curriculum.db
+
+`generate.sh` is a shell script that uses `sqlite-utils`
+
+
+
+
+
+```
