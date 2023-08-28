@@ -14,3 +14,26 @@ This project has three initial goals:
 | --- | --- |
 | 27 Aug 2023 | Initial experiments with Datasette (generate and explore sqlite database with v8.4 curriculum) and Streamlit (initial experiment using that database). |
 
+
+
+## Use
+
+1. Set up virtual env.
+
+    `source env/bin/activate`
+
+2. Install requirements.
+
+    `pip install -r requirements.txt`
+
+3. Create database 
+
+    ```bash
+    cd datasette
+    sh generate.sh
+    ```
+
+4. Run datasette and follow instructions
+   
+    `datasette curriculum.db`
+
