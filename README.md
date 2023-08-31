@@ -26,6 +26,15 @@ Question being how to enable ad hoc connection maps between the different compon
 
 Perhaps the very essence of gather/weave.
 
+### Clever approaches to curriculum visualisation?
+
+[Michaela Epstien](https://www.michaelaepstein.com.au/about) asks about ["other clever approaches to curriculum visualisation"](https://www.michaelaepstein.com.au/post/why-curriculum-visualisation-matters). Sparked by hearing designers talk about the impact of even the smallest combinations of words and images on meaning she asks what curriculum design tells us.  Her response? 
+
+> The curriculum is linear.
+
+She gives alternatives (images appear to be currently )
+
+Yes, and also need to think about [the affordances](https://djplaner.github.io/memex/sense/Affordances/affordances/) those designs provide (and to whom).
 
 
 
