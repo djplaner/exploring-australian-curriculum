@@ -17,6 +17,12 @@
 
 # Data folder
 
+## v9 Curriculum data
+
+[Available from curriculum site](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/002-exploring-oz-dev-log/)
+
+## v8.4 Curriculum data
+
 The Excel spreadsheet was sourced from the Australian Curriculum site and converted to the CSV files included here. These form the source data for the exploration.
 
 | Sheet/table | Description |

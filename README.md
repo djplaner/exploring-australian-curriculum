@@ -20,7 +20,8 @@ For more see [the project's design page](https://djplaner.github.io/memex/sense/
 
 | Date | Progress |
 | --- | --- |
-| 27 Aug 2023 | Initial experiments with Datasette (generate and explore sqlite database with v8.4 curriculum) and Streamlit (initial experiment using that database). |
+| [27 Aug 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/001-exploring-oz-dev-log/) | Initial experiments with Datasette (generate and explore sqlite database with v8.4 curriculum) and Streamlit (initial experiment using that database). |
+| [24 Sep 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/002-exploring-oz-dev-log/) | Pondering what to do with the v9 Australian Curriculum. Discovering that the use of RDF/semantic web etc has complicated the reusability. Barrier to entry quite high. Many connections. |
 
 
 
