@@ -28,13 +28,28 @@ g.parse("../data/v9/MAT.rdf", format="xml")
 import pprint 
 #pprint.pprint(g.subjects)
 
+subjects = {}
+
 for s, p, o in g:
     if (s, p, o) not in g:
         raise Exception("It better be!")
 
-    print(f"\nSubject: {s}")
-    print(f"Predicate: {p}")
-    print(f"Object: {o}")
+    #-- if the subject is not in the dictionary, add it
+    if s not in subjects:
+        subjects[s] = {}
+
+    subjects[s][p] = o
+
+for s in subjects:
+    print(f"Subject {s} ")
+#    print( f"  title {subjects[s][RDF.title]}")
+    for p in subjects[s]:
+        if "statementLabel" in str(p) or "title" in str(p):
+            print(f"  {p} = {subjects[s][p]}")
+
+    print()
+
+
 
 #for stmt in g:
 #    pprint.pprint(stmt)
