@@ -14,22 +14,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Experiment in using rdflib to parse the v9 Oz curriculum files
-- very ugly early experiments, unfinished
+recurse.py --rdffile <pathToRdfFile>
+
+- Simple test to recurse through the tree structure of an RDF file provided by the Australian Curriuclum v9
 """
 
 from pprint import pprint 
 
+import argparse
+
 from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF
 from rdflib.plugin import register, Serializer, Parser
-
-def dumpGraph():
-    """
-    Simple text dump of graph
-    """
-
-    print(g.serialize( format="json-ld", indent=4))
 
 def printMyNameSpace(g):
     """
@@ -202,72 +198,140 @@ def sparqlDump(g):
     
 
 
-g = Graph()
-#g.parse("../data/v9/MAT.rdf", format="xml", bind_namespaces="rdflib")
-g.parse("../data/v9/MAT.rdf", format="xml")
+def generateGraphObject(filename):
+    """
+    Given the path to an RDF file, attempt to parse it using RDFLib and return the Graph object
+    """
 
-print("one")
-getAllValuesForContentDescription(g, "http://vocabulary.curriculum.edu.au/MRAC/2023/07/LA/MAT/5dc85a9b-a071-409d-a543-a79f6d0da403" )
-#print("two")
-#getAllValuesForContentDescription(g, "http://vocabulary.curriculum.edu.au/MRAC/2023/07/LA/MAT/c643289b-9771-4d9f-9a33-836b6ec52335")
-#dumpGraphTriples(g)
-quit(0)
-#dumpContentDescriptions(g)
+    g = Graph()
+    g.parse(filename, format="xml")
 
-getYearLevelContentDescriptionIds(g, 10)
-
-#sparqlDump(g)
-
-dumpGraphTriples(g)
-quit(0)
+    #-- did it work
+    print(f"Graph length {len(g)}")
+    if len(g) == 0:
+        print("No data in graph")
+        quit(1)
+    return g
 
 
+def parseArgs():
+    """
+    Ensure we get the RDF file 
+    """
 
+    parser = argparse.ArgumentParser(description="Recurse through an Oz Curriculum RDF file")
+    parser.add_argument("--rdffile", action="store", help="Path to the RDF file", required=True)
 
-#print(len(g))
+    return parser.parse_args()
 
-#pprint.pprint(g.subjects)
+def getRootId(g):
+    """
+    Given a graph extract the subjectId for the node where statementNotation predicate is "root"
+    """
 
-subjects = {}
+    asnNameSpace = Namespace("http://purl.org/ASN/schema/core/")
+    statementNotation = asnNameSpace.statementNotation
 
-for s, p, o in g:
-    if (s, p, o) not in g:
-        raise Exception("It better be!")
+    subjects = g.subjects(predicate=statementNotation, object=Literal("root", lang="en-au")) 
 
-    print("----- subject")
-    pprint(s)
-    print("----- predicate")
-    pprint(p)
-    print("----- object")
-    pprint(o)
+    #-- how many?
+    count = 0
+    subject = None
+    for s in subjects:
+        count += 1
+        subject = s
+        print(f"Subject {s}")
 
-    #-- if the subject is not in the dictionary, add it
-    if s not in subjects:
-        subjects[s] = {}
+    if count == 0:
+        print("No root found")
+        quit(1)
+    if count > 1:
+        print("More than one root found")
+        quit(1)
 
-    subjects[s][p] = o
+    return subject
 
-for s in subjects:
-    print(f"Subject {s} ")
-#    print( f"  title {subjects[s][RDF.title]}")
-    for p in subjects[s]:
-        if "statementLabel" in str(p) or "title" in str(p):
-            print(f"  {p} = {subjects[s][p]}")
+def parsePos(pos):
+    """
+    Given a generator of all predicate_objects split them into info to display and children
 
-    print()
+    (nodeInfo, nodeChilder)
+    """
 
+    nodeInfo = []
+    nodeChildren = []
 
+    for p, o in pos:
+#        print(f"predicate {p} object {o}")
+        if p == URIRef("http://purl.org/gem/qualifiers/hasChild"):
+            nodeChildren.append(o)
+        else:
+            nodeInfo.append((p, o))
 
-#for stmt in g:
-#    pprint.pprint(stmt)
+    return ( nodeInfo, nodeChildren)
 
-#data = g.serialize(format='nt')
-#print(data)
+def displayNode(nodeInfo, depth=0):
 
-#predicateQuery = g.query("""
-#                         select ?s 
-#                         where {?s ?predicates ?o}
-#                         """)
-#
-#for row in predicateQuery:
-#    print('%s' % row)
+    for (p, o) in nodeInfo:
+#        pprint(entry)
+        print(f"{' ' * depth} - {p} >>> {o}")
+#        if p == URIRef("http://purl.org/ASN/schema/core/statementNotation"):
+#            print(f"- statementNotation {o}")
+#        if p == URIRef("http://purl.org/dc/terms/title"):
+#            print(f"- title {o}")
+
+def getChildren(pos):
+    """
+    Given a generator of predicate/objects for a node, return a list with the predicate hasChild
+     xmlns="http://purl.org/gem/qualifiers/"
+    """
+
+    children = []
+    for p, o in pos:
+        print(f"predicate {p} object {o}")
+        if p == "http://purl.org/gem/qualifiers/hasChild":
+            children.append(o)
+
+    return children
+
+def recurseOzCurriculum(g, subjectId, depth=0):
+    """
+    Oz Curriuclum RDF files have a parent/child structure using <hasChild> and <isChildOf> predicates
+    Recurse through the graph from the given subjectId, display some information about each node
+
+    - g is the graph object
+    - subjectId is the @id of the current node to display and recurse down
+    - depth is the current depth of recursion/descent down the tree
+    """
+
+    #-- get the predicates/objects for this subjectId
+    pos = g.predicate_objects(subject=URIRef(subjectId))
+
+    ( nodeInfo, nodeChildren) = parsePos(pos)
+
+#    pprint(nodeChildren)
+
+    displayNode(nodeInfo, depth)
+
+#    children = getChildren(pos)
+#    pprint(children)
+    
+
+def startRecursion(g):
+    """
+    Main harness for recursing and display info about an Oz Curriculum RDF file
+    """
+
+    rootId = getRootId(g)
+    print(f"Root id {rootId}")
+
+    recurseOzCurriculum(g, rootId)
+
+if __name__ == "__main__":
+
+    args = parseArgs()
+
+    g = generateGraphObject(args.rdffile)
+
+    startRecursion( g)
+   
