@@ -27,176 +27,6 @@ from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF
 from rdflib.plugin import register, Serializer, Parser
 
-def printMyNameSpace(g):
-    """
-    Display the namespaces used in the graph
-    """
-    for ns_prefix, namespace in g.namespaces():
-        print(f"ns_prefix {ns_prefix} namespace {namespace}")
-
-def getAllValuesForContentDescription(g, subjectId):
-    """
-    Given a graph and an subjectId for a content description
-    display details of a specific subset of values
-
-    - Graph.vaue( subject=subjectId, predicate="Content Description") 
-    - Get all the specific values via value method
-      http://vocabulary.curriculum.edu.au/MRAC/2023/07/LA/MAT/5dc85a9b-a071-409d-a543-a79f6d0da403"
-    """
-    
-    valuesGraph = Graph()
-    
-    #-- create a literal search for subjectId
-    id = URIRef(subjectId)
-    pprint(id)
-    print(id)
-
-    cdLiteral = Literal("Content Description", lang="en-au")
-    # - namespace
-    asnNameSpace = Namespace("http://purl.org/ASN/schema/core/")
-    cdPredicate = asnNameSpace.statementLabel
-
-    print(f"Trying to get values for {id} --- {cdLiteral}")
-#    ylLiteral = Literal(f"Year 8", lang='en-au')
-#    ylPredicate = URIRef('https://www.esa.edu.au/nominalYearLevel')
-
-    #-- perhaps use triples
-#    valuesGraph = g.value((id, cdLiteral, None), default="fred")
-    #-- triples gets a long list of all sorts of things
-#    valuesGraph = g.triples((id, None, None))
-    valuesGraph = g.predicate_objects(subject=id)
-
-    for tuple in valuesGraph:
-        print(f"tuple {tuple}")
-
-    quit(1)
-
-    if valuesGraph=="fred":
-        print("No values found")
-        return
-    #dumpGraphTriples(valuesGraph)
-    for s, p, o in g:
-        print(f"-- {s} --- predict {p} object {o}")
-    quit(1)
-    pprint(valuesGraph)
-    #valuesGraph = g.triples((None, cdPredicate, None))
-#    valuesGraph += g.triples((None, ylPredicate, ylLiteral))
-#    pprint(valuesGraph)
-#    quit(1)
-    #dumpGraph(valuesGraph)
-
-
-
-
-def dumpContentDescriptions(g):
-    """
-    Given a graph for a Oz Curriculum RDF file extract out all the content descriptions and display their code and title
-
-    Content descriptions are identified by the 
-    - predicate http://purl.org/ASN/schema/core/statementLabel
-    - object 'Content Description'
-    """
-
-    cdGraph = extractContentDescriptions(g)
-    dumpGraph(cdGraph)
-
-def extractContentDescriptions(g):
-    """
-    Return a graph of all the content descriptions in the given graph
-    """
-    cdGraph = Graph()
-
-    #-- form the literal search
-    # - the language is important
-    cdLiteral = Literal("Content Description", lang="en-au")
-    # - namespace
-    asnNameSpace = Namespace("http://purl.org/ASN/schema/core/")
-    cdPredicate = asnNameSpace.statementLabel
-
-    cdGraph += g.triples((None, cdPredicate, cdLiteral))
-
-    return cdGraph
-
-def extractYearLevel(graph, yearLevel):
-    """
-    Return a graph of all statements associated with a given year level
-    - predicate URIRef('https://www.esa.edu.au/nominalYearLevel')
-    - object Literal(f"Year {yearLevel}", lang='en-au')
-    """
-
-    ylGraph = Graph()
-    
-    ylLiteral = Literal(f"Year {yearLevel}", lang='en-au')
-    ylPredicate = URIRef('https://www.esa.edu.au/nominalYearLevel')
-    
-    ylGraph += graph.triples((None, ylPredicate, ylLiteral))
-    
-    return ylGraph
-
-def getYearLevelContentDescriptionIds(graph, yearLevel):
-    """
-    Return a list of @ids into the graph for all the content descriptions that match the given yearLevel
-    """
-
-    #-- generate a graph for a given year level
-    yearLevelGraph = extractYearLevel(graph, yearLevel)
-
-    #-- get a list of subjects in that graph
-    subjects = [str(s) for s in yearLevelGraph.subjects()]
-    pprint(subjects)
-
-#    dumpGraph(yearLevelGraph)
-
-    #-- generate a graph of the content descriptions from that year level graph
-    cdGraph = extractContentDescriptions(yearLevelGraph)
-
-#    ylCdGraph = yearLevelGraph + cdGraph
-
-    dumpGraph(cdGraph)
-#    dumpGraphTriples(cdGraph)
-
-    #-- return a list of the @ids of the content descriptions 
-    #return [str(cd) for cd in cdGraph.subjects()]
-
-def dumpGraph(g):
-    """
-    Simple text dump of graph
-    """
-
-    print(g.serialize( format="json-ld", indent=4))
-
-def dumpGraphTriples(g):
-    """
-    Simple text dump of graph
-    """
-
-    for s, p, o in g:
-        print("----- subject")
-        pprint(s)
-        print("----- predicate")
-        pprint(p)
-        print("----- object")
-        pprint(o)
-
-def sparqlDump(g):
-    """
-    Experiment with using SPARQL to query the graph
-    Just do a simple dump
-    """
-
-    query = """
-    SELECT ?s ?p ?o
-    WHERE {
-        ?s ?p ?o .
-    }
-    LIMIT 3 
-    """
-
-    results = g.query(query)
-    for row in results:
-        pprint(row)
-    
-
 
 def generateGraphObject(filename):
     """
@@ -207,7 +37,7 @@ def generateGraphObject(filename):
     g.parse(filename, format="xml")
 
     #-- did it work
-    print(f"Graph length {len(g)}")
+#    print(f"Graph length {len(g)}")
     if len(g) == 0:
         print("No data in graph")
         quit(1)
@@ -240,7 +70,7 @@ def getRootId(g):
     for s in subjects:
         count += 1
         subject = s
-        print(f"Subject {s}")
+#        print(f"Subject {s}")
 
     if count == 0:
         print("No root found")
@@ -270,15 +100,24 @@ def parsePos(pos):
 
     return ( nodeInfo, nodeChildren)
 
-def displayNode(nodeInfo, depth=0):
+def displayNode(subjectId, nodeInfo, depth=0):
+    """
+    Display information for the node with subjectId
+    """
 
+    ## remove http://vocabulary.curriculum.edu.au/MRAC/2023/07/ from subjectId
+    id = subjectId.replace("http://vocabulary.curriculum.edu.au/MRAC/2023/07/", "")
+
+    print(f"{'  ' * depth}Node {id}")
     for (p, o) in nodeInfo:
 #        pprint(entry)
-        print(f"{' ' * depth} - {p} >>> {o}")
-#        if p == URIRef("http://purl.org/ASN/schema/core/statementNotation"):
-#            print(f"- statementNotation {o}")
-#        if p == URIRef("http://purl.org/dc/terms/title"):
-#            print(f"- title {o}")
+#        print(f"{' ' * depth} - {p} >>> {o}")
+        if p == URIRef("http://purl.org/ASN/schema/core/statementNotation"):
+            print(f"{'  ' * depth}- statementNotation {o}")
+        if p == URIRef("http://purl.org/ASN/schema/core/statementLabel"):
+            print(f"{'  ' * depth}- statementLabel {o}")
+        if p == URIRef("http://purl.org/dc/terms/title"):
+            print(f"{'  ' * depth}- title {o}")
 
 def getChildren(pos):
     """
@@ -307,14 +146,21 @@ def recurseOzCurriculum(g, subjectId, depth=0):
     #-- get the predicates/objects for this subjectId
     pos = g.predicate_objects(subject=URIRef(subjectId))
 
+    #-- parse them out into information and children
     ( nodeInfo, nodeChildren) = parsePos(pos)
+    #-- display the information
+    displayNode(subjectId, nodeInfo, depth)
 
-#    pprint(nodeChildren)
+#    if depth==5:
+#        print("-----------------")
+#        quit(1)
+    #-- recurse down
+    for child in nodeChildren:
+        childId = str(child)
+        recurseOzCurriculum(g, childId, depth+1)
 
-    displayNode(nodeInfo, depth)
 
-#    children = getChildren(pos)
-#    pprint(children)
+
     
 
 def startRecursion(g):
@@ -323,7 +169,7 @@ def startRecursion(g):
     """
 
     rootId = getRootId(g)
-    print(f"Root id {rootId}")
+#    print(f"Root id {rootId}")
 
     recurseOzCurriculum(g, rootId)
 
@@ -331,6 +177,7 @@ if __name__ == "__main__":
 
     args = parseArgs()
 
+    print(f"---------------------- {args.rdffile} ----------------------")
     g = generateGraphObject(args.rdffile)
 
     startRecursion( g)
