@@ -12,7 +12,7 @@ For more see [the project's design page](https://djplaner.github.io/memex/sense/
 
 ## Next steps?
 
-- Import v9 of the Australian Curriculum
+- Generating Python class for manipulating the Australian Curriculum structures
 - Explore how the approach used by [WebGlossary.info](https://webglossary.info/) might be integrated with memex
 
 
@@ -22,6 +22,9 @@ For more see [the project's design page](https://djplaner.github.io/memex/sense/
 | --- | --- |
 | [27 Aug 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/001-exploring-oz-dev-log/) | Initial experiments with Datasette (generate and explore sqlite database with v8.4 curriculum) and Streamlit (initial experiment using that database). |
 | [24 Sep 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/002-exploring-oz-dev-log/) | Pondering what to do with the v9 Australian Curriculum. Discovering that the use of RDF/semantic web etc has complicated the reusability. Barrier to entry quite high. Many connections. |
+| [Nov 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/003-exploring-oz-dev-log/) | Failed experiments with Neo4J |
+| [Early Dec 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/004-exploring-oz-dev-log/) | Coming to grips with using `rdflib` to recurse the structure | 
+| [Late Dec 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/005-exploring-oz-dev-log/) | Design of `acLearningArea.py` class and generating markdown pages |
 
 
 

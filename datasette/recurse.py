@@ -81,24 +81,34 @@ def getRootId(g):
 
     return subject
 
-def parsePos(pos):
+def splitPos(pos):
     """
     Given a generator of all predicate_objects split them into info to display and children
+
+    Some of the predicates/objects for the current node are information and some are children of the subject. Split them into two separate arrays returned as a tuple
 
     (nodeInfo, nodeChilder)
     """
 
     nodeInfo = []
     nodeChildren = []
+    nodeLevels = []
 
     for p, o in pos:
+        """
+        An object is a child if 
+        - it's predicate is hasChild, or
+        - it's predicate is `hasLevel`
+        """
 #        print(f"predicate {p} object {o}")
         if p == URIRef("http://purl.org/gem/qualifiers/hasChild"):
             nodeChildren.append(o)
+        elif p == URIRef("http://purl.org/ASN/schema/core/hasLevel"):
+            nodeLevels.append(o)
         else:
             nodeInfo.append((p, o))
 
-    return ( nodeInfo, nodeChildren)
+    return ( nodeInfo, nodeChildren, nodeLevels)
 
 def displayNode(subjectId, nodeInfo, depth=0):
     """
@@ -113,11 +123,19 @@ def displayNode(subjectId, nodeInfo, depth=0):
 #        pprint(entry)
 #        print(f"{' ' * depth} - {p} >>> {o}")
         if p == URIRef("http://purl.org/ASN/schema/core/statementNotation"):
-            print(f"{'  ' * depth}- statementNotation {o}")
-        if p == URIRef("http://purl.org/ASN/schema/core/statementLabel"):
-            print(f"{'  ' * depth}- statementLabel {o}")
-        if p == URIRef("http://purl.org/dc/terms/title"):
-            print(f"{'  ' * depth}- title {o}")
+            print(f"{'   ' * depth}- statementNotation {o}")
+        elif p == URIRef("http://purl.org/ASN/schema/core/statementLabel"):
+            print(f"{'   ' * depth}- statementLabel {o}")
+        elif p == URIRef("http://purl.org/dc/terms/title"):
+            print(f"{'   ' * depth}- title {o}")
+
+    exclude = [URIRef("http://purl.org/ASN/schema/core/statementNotation"), 
+               URIRef("http://purl.org/ASN/schema/core/statementLabel"),
+               URIRef("http://purl.org/dc/terms/title") ]
+    #-- show the other info nodes
+    for (p, o) in nodeInfo:
+        if p not in exclude:
+            print(f"{'   ' * depth} - other predicate {p} >>> {o}")
 
 def getChildren(pos):
     """
@@ -146,15 +164,17 @@ def recurseOzCurriculum(g, subjectId, depth=0):
     #-- get the predicates/objects for this subjectId
     pos = g.predicate_objects(subject=URIRef(subjectId))
 
-    #-- parse them out into information and children
-    ( nodeInfo, nodeChildren) = parsePos(pos)
+    #-- split them out into information and children
+    ( nodeInfo, nodeChildren, nodeLevels) = splitPos(pos)
     #-- display the information
     displayNode(subjectId, nodeInfo, depth)
 
-#    if depth==5:
-#        print("-----------------")
-#        quit(1)
     #-- recurse down
+    # - first the levels and then the children
+
+    for level in nodeLevels:
+        levelId = str(level)
+        recurseOzCurriculum(g, levelId, depth+1)
     for child in nodeChildren:
         childId = str(child)
         recurseOzCurriculum(g, childId, depth+1)
