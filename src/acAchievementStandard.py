@@ -14,9 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-acYearLevel.py
+acAchievementStandard.py
 
-Implement (data) class for handling an Australian Curriculum year level
+Implement (data) class for handling an Australian Curriculum achievement standard
 
 """
 
@@ -26,41 +26,33 @@ from typing import Any
 from datetime import datetime
 
 @dataclass
-class acYearLevel:
+class acAchievementStandard:
     #-- tmp storage of the RDFLib node object
     node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
-    title: str = None
+    title: str = None # the actual detail/description of the achievement standard
     abbreviation: str = None
-    description: str = None
+    #description: str = None
     dateModified : datetime = None
+    nominalYearLevel : str = None
 
-    achievementStandard : Any = None # single acAchievementStandard object for year level
-    # dict of acStrand objects keyed on the abbreviation of the strand
-    # - will contain sub-strands, which in turn contain content descriptions
-    strands : dict = None
+    components : dict = None # keyed on abbreviation of the AchievementStandardComponent
     
-    def __init__(self, subjectId, title, abbreviation, dateModified):
+    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel):
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
+        self.nominalYearLevel = nominalYearLevel
 
-        self.strands = {}
+        self.components = {}
 
     def __str__(self) -> str:
-        representation = f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
+        representation = f"""{self.abbreviation} - {self.title} modified {self.dateModified}"""
 
-        representation += "\n\t --------- achievementStandard ---------"
-
-        representation += f"""\n\t\t{self.achievementStandard}"""
-
-        representation += "\n\t --------- Strands ---------"
-
-        for strand in self.strands.keys():
-            representation += f"\n\t\t{self.strands[strand]}"
-
+        for component in self.components.keys():
+            representation += f"\n\t\t{self.components[component]}"
 
         return representation
 

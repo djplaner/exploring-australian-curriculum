@@ -14,9 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-acYearLevel.py
+acAchievementStandardComponent.py
 
-Implement (data) class for handling an Australian Curriculum year level
+Implement (data) class for handling an Australian Curriculum achievement standard component
 
 """
 
@@ -26,41 +26,27 @@ from typing import Any
 from datetime import datetime
 
 @dataclass
-class acYearLevel:
+class acAchievementStandardComponent:
     #-- tmp storage of the RDFLib node object
     node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
-    title: str = None
+    title: str = None # the actual detail/description of the achievement standard component
     abbreviation: str = None
-    description: str = None
+    #description: str = None
     dateModified : datetime = None
+    nominalYearLevel : str = None
 
-    achievementStandard : Any = None # single acAchievementStandard object for year level
-    # dict of acStrand objects keyed on the abbreviation of the strand
-    # - will contain sub-strands, which in turn contain content descriptions
-    strands : dict = None
-    
-    def __init__(self, subjectId, title, abbreviation, dateModified):
+    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel):
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
+        self.nominalYearLevel = nominalYearLevel
 
-        self.strands = {}
 
     def __str__(self) -> str:
-        representation = f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
-
-        representation += "\n\t --------- achievementStandard ---------"
-
-        representation += f"""\n\t\t{self.achievementStandard}"""
-
-        representation += "\n\t --------- Strands ---------"
-
-        for strand in self.strands.keys():
-            representation += f"\n\t\t{self.strands[strand]}"
-
+        representation = f"""{self.abbreviation} - {self.title} modified {self.dateModified}"""
 
         return representation
 
@@ -76,5 +62,9 @@ class acYearLevel:
         """
         Convert the string value (e.g. 2021-09-28T09:27:45+00:00) into a datetime object
         """
-        self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z") 
+        try:
+            self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z") 
+        except: 
+            # there's a bit of variety in the AC rdf files
+            self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
  

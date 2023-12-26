@@ -17,6 +17,11 @@
 acLearningArea.py 
 
 Define Python class - asLearningArea - that will parse an Australian Curriuclum (v9) RDF file for a learning area into an Python object
+
+Current design assumptions
+- all the RDF parsing work is done in this class
+- it creates various AC specific objects based on related classes
+- all are implemented as @dataclass
 """
 
 from dataclasses import dataclass
@@ -31,21 +36,57 @@ from rdflib.plugin import register, Serializer, Parser
 from acLearningArea import acLearningArea
 from acYearLevel import acYearLevel
 from acSubject import acSubject
+from acAchievementStandard import acAchievementStandard
+from acAchievementStandardComponent import acAchievementStandardComponent
+from acStrand import acStrand
+from acSubStrand import acSubStrand
+from acContentDescription import acContentDescription
+from acElaboration import acElaboration
 
 from pprint import pprint
 
 
 @dataclass
 class australianCurriculum:
+    """ early processing type data structures
+    - some of thse (e.g. nodes and root) may have to go away
+    """
     nodes : dict  # points to nodes in graph (learningArea and subjects)
     root : Any = None # root node of graph, feels kludgy
     graph: Any = None # the RDFLib graph object
     # Currently file being parsed TODO remove as we're going to handle multiple files
     fileName: str = None 
-    #-- storage for the curriculum objects
+
+    """ Storage for the curriculum objects
+    - This class will parse the RDF file creating the following objects 
+
+    australianCurriculum is made up of numerous learning areas. 
+    TODO use a "parseFile" method to allow multiple RDF files to be parsed
+    (because by default an AC RDF file only overs one learning area)"""
     learningAreas: dict = None
+    """
+    Each learning area can have multiple subjects, which in turn contain most/all of the
+    data 
+    - yearLevels 
+        - achievement standards, 
+            - achievement standard components  
+        - strands 
+            - sub-strands (sub-strands are optional)
+                - content descriptions 
+
+    TODO
+    - need to figure out how to handle optional sub-strands
+    """
     subjects: dict = None
+    #-- Each subject is made up of strands/sub-strands/content descriptors
+    # - store them in strands, but also update the content descriptions dict to point
+
+    #-- direct access dicts TODO
+    # - These are to make it easier to access specific AC components that are hidden away
+    #   in the class hierarchy above. keyed on the AC ids/abbreviations and linking to those
+    #   object components
     contentDescriptions: dict = None
+    strands: dict = None 
 
     def __init__(self, fileName = None):
 
@@ -157,12 +198,12 @@ Root subject {self.root}"""
         found = 0
         for learningAreaNode in learningAreaNodes:
             #-- extract the title, dateModified, and abbreviation from the node
-            title = self.graph.value(subject=learningAreaNode, predicate=URIRef("http://purl.org/dc/terms/title"))
-            dateModified = self.graph.value(subject=learningAreaNode, predicate=URIRef("http://purl.org/dc/terms/modified"))
-            # abbreviation is in the statementNotation predicate
-            abbreviation = self.graph.value(subject=learningAreaNode, predicate=self.statementNotation)
-            learningArea = acLearningArea(learningAreaNode, title, dateModified, abbreviation) 
-            self.learningAreas[title] = learningArea
+            info = self.extractNodeInfo(learningAreaNode) 
+
+            learningArea = acLearningArea(
+                learningAreaNode, info['title'], info['modified'], info['statementNotation']) 
+
+            self.learningAreas[info['title']] = learningArea
             found+=1
 
         if (found == 0):
@@ -187,17 +228,15 @@ Root subject {self.root}"""
             predicate=self.statementLabel, object=Literal("Subject", lang="en-au"))
         
         for subject in subjects:
-            title = self.graph.value(subject=subject, predicate=URIRef("http://purl.org/dc/terms/title"))
-            abbreviation = self.graph.value(subject=subject, predicate=self.statementNotation)
-            dateModified = self.graph.value(subject=subject, predicate=URIRef("http://purl.org/dc/terms/modified"))
-
-            self.subjects[title] = acSubject(subject, title, abbreviation, dateModified)
+            info = self.extractNodeInfo(subject)
+            self.subjects[info['title']] = acSubject(
+                subject, info['title'], info['statementNotation'], info['modified'])
 
             #-- for each subject, start parsing the year levels
             # - pass in the node and the title (for the subjects dict) and
             #   recurse down the graph using date methods for the year level class
             #   to add new classes for achievement standards and content descriptions
-            self.parseYearLevel(subject, title)
+            self.parseYearLevel(subject, info['title'])
 
     def parseYearLevel(self, subjectId, titleOfSubject):
         """
@@ -212,18 +251,167 @@ Root subject {self.root}"""
             predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=subjectId)
 
         for yearLevelNode in yearLevelNodes:
-            #-- extract the title, dateModified, and abbreviation from the node
-            title = self.graph.value(subject=yearLevelNode, predicate=URIRef("http://purl.org/dc/terms/title"))
-            dateModified = self.graph.value(subject=yearLevelNode, predicate=URIRef("http://purl.org/dc/terms/modified"))
-            # abbreviation is in the statementNotation predicate
-            abbreviation = self.graph.value(subject=yearLevelNode, predicate=self.statementNotation)
-            yearLevel = acYearLevel(yearLevelNode, title, abbreviation, dateModified) 
-            self.subjects[titleOfSubject].yearLevels[title] = yearLevel
+            info = self.extractNodeInfo(yearLevelNode)
 
-            #-- TODO add the achievement standard children for this year level
+            yearLevel = acYearLevel(
+                yearLevelNode, info['title'], info['statementNotation'], info['modified']) 
 
+            self.subjects[titleOfSubject].yearLevels[info['title']] = yearLevel
+
+            self.parseYearLevelAchievementStandards( yearLevel )
+            self.parseYearLevelStrands( yearLevel ) 
             
-            #-- TODO add the content description children for this year level
+
+    def parseYearLevelStrands(self, yearLevel):
+        """
+        Given an acYearLevel object parse the graph to get all the 
+        - strands 
+            - sub-strands
+                - content descriptions for the year level
+        """
+
+        #-- get all the "Strands" nodes with isChildOf of yearLevel.subjectId
+        # - start with the children
+        strandNodes = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=yearLevel.subjectId)
+
+        for strandNode in strandNodes:
+            info = self.extractNodeInfo(strandNode)
+            #-- check the strandNode statementlabel is "Strand" skip if not
+            if str(info['statementLabel']) != "Strand":
+                continue
+
+            strand = acStrand(
+                strandNode, info['title'], info['statementNotation'], 
+                info['modified'], info['nominalYearLevel']) 
+            yearLevel.strands[str(info['title'])] = strand
+
+            #-- grab the sub-strands
+            self.parseStrandSubStrands(strand)
+
+    def parseStrandSubStrands(self, strand):
+        """
+        Given a stand (from a particular year level) grab all 
+        - sub-strands
+            - content descriptions
+        """
+
+        #-- sub-strands are children of the strand with "Sub-Strand" as the statementLabel
+        subStrandNodes = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=strand.subjectId)
+
+        for subStrandNode in subStrandNodes:
+            info = self.extractNodeInfo(subStrandNode)
+            #-- check the subStrandNode statementlabel is "Sub-Strand" skip if not
+            if str(info['statementLabel']) != "Sub-Strand":
+                continue
+
+            subStrand = acSubStrand(
+                subStrandNode, info['title'], info['statementNotation'], 
+                str(info['modified']), info['nominalYearLevel']) 
+            strand.subStrands[str(info['title'])] = subStrand
+
+            #-- grab the content descriptions
+            self.parseSubStrandContentDescriptions(subStrand)
+
+    def parseSubStrandContentDescriptions(self, subStrand):
+        """
+        Given a subStrand (from a particular strand) grab all
+        - content descriptions
+        """
+
+        #-- content descriptions are children of the subStrand with 
+        # "Content Description" as the statementLabel
+        cdNodes = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=subStrand.subjectId)
+
+        for cdNode in cdNodes:
+            info = self.extractNodeInfo(cdNode)
+            #-- check the cdNode statementlabel is "Content Description" skip if 
+            if str(info['statementLabel']) != "Content Description":
+                continue
+
+            contentDescription = acContentDescription(
+                cdNode, info['title'], info['statementNotation'], 
+                str(info['modified']), info['nominalYearLevel'])
+
+            subStrand.contentDescriptions[str(info['statementNotation'])] = contentDescription
+
+            self.parseContentDescriptionExtras(contentDescription)
+
+    def parseContentDescriptionExtras(self, contentDescription):
+        """
+        Given a acContentDescription object parse the graph to get all the CD extras, including
+        - Elaborations
+        - Achievement Standard Components
+        """
+
+        cdExtraNodes = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=contentDescription.subjectId)
+
+        for cdExtraNode in cdExtraNodes:
+            info = self.extractNodeInfo(cdExtraNode)
+
+            if str(info['statementLabel']) not in ["Elaboration", "Achievement Standard Component"]:
+                continue
+
+            if str(info['statementLabel']) == "Elaboration":
+                elaboration = acElaboration(
+                    cdExtraNode, info['title'], info['statementNotation'],
+                    str(info['modified']), info['nominalYearLevel'])
+
+                contentDescription.elaborations[str(info['statementNotation'])] = elaboration
+            else:
+                achievementStandardComponent = acAchievementStandardComponent(
+                    cdExtraNode, info['title'], info['statementNotation'],
+                    str(info['modified']), info['nominalYearLevel'])
+
+                contentDescription.achievementStandardComponents[str(info['statementNotation'])] = achievementStandardComponent
+            
+
+
+
+
+    def parseYearLevelAchievementStandards(self, yearLevel):
+        """
+        Given an acYearLevel object, parse the graph to set the achievement standards object for all the "Achievement Standard" and "Achievement Standard Component" nodes
+
+        "Achievement Standard" nodes will have isChildOf of yearLevel.subjectId
+        Each one of those will have a child "Achievement Standard Component" node (maybe)
+        """
+
+        #-- get all the "Achievement Standard" nodes with isChildOf of yearLevel.subjectId
+        achievementStandardNodes = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=yearLevel.subjectId)
+
+        for achievementStandardNode in achievementStandardNodes:
+            info = self.extractNodeInfo(achievementStandardNode)
+            #-- check the statementLabel is "Achievement Standard"
+            if str(info['statementLabel']) != "Achievement Standard":
+                continue
+
+            achievementStandard = acAchievementStandard(
+                achievementStandardNode, info['title'], info['statementNotation'], 
+                info['modified'], info['nominalYearLevel']) 
+            yearLevel.achievementStandard = achievementStandard
+
+            #-- grab the achievement standard components
+            # - statementLabel is "Achievement Standard Component" and 
+            #   isChildOf is the achievementStandardNode
+            components = self.graph.subjects(
+                predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=achievementStandardNode)
+
+            for component in components:
+                info = self.extractNodeInfo(component)
+                #-- check the statementLabel is "Achievement Standard Component"
+                if str(info['statementLabel']) != "Achievement Standard Component":
+                    continue
+
+                acComponent = acAchievementStandardComponent(
+                    component, info['title'], info['statementNotation'], 
+                    info['modified'], info['nominalYearLevel']) 
+
+                achievementStandard.components[str(info['statementNotation'])] = acComponent
             
 
     def walkTheGraph(self, subjectId=None, depth=0):
@@ -322,6 +510,30 @@ Root subject {self.root}"""
             if p not in exclude:
                 print(f"{'   ' * depth} - other predicate {p} >>> {o}")
 
+
+    def extractNodeInfo(self, subjectId) -> dict:
+        """
+        Given a subjectId return a dict that contains common information from an AC node
+        """
+
+        info = {}
+
+        info['title'] = self.graph.value(
+            subject=subjectId, predicate=URIRef("http://purl.org/dc/terms/title"))
+        info['statementLabel'] = self.graph.value(
+            subject=subjectId, predicate=self.statementLabel)
+        info['statementNotation'] = self.graph.value(
+            subject=subjectId, predicate=self.statementNotation)
+
+        info['description'] = self.graph.value(
+            subject=subjectId, predicate=URIRef("http://purl.org/dc/terms/description"))
+        info['modified'] = self.graph.value(
+            subject=subjectId, predicate=URIRef("http://purl.org/dc/terms/modified"))
+        # abbreviation is in the statementNotation predicate
+        info['nominalYearLevel'] = self.graph.value(
+            subject=subjectId, predicate=URIRef("http://www.esa.edu.au/nominalYearLevel"))
+
+        return info
 
 
 
