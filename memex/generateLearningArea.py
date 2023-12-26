@@ -29,8 +29,7 @@ from pprint import pprint
 import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
 
-from acLearningArea import acLearningArea
-
+from australianCurriculum import australianCurriculum 
 
 def parseArgs():
     """
@@ -49,7 +48,8 @@ if __name__ == "__main__":
 
     args = parseArgs()
 
-    learningArea = acLearningArea(args.rdffile)
+    learningArea = australianCurriculum(args.rdffile)
 
+    print(learningArea)
 
-    pprint(learningArea.graph)
+#    learningArea.walkTheGraph()
