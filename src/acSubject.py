@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-acLearningArea.py
+acSubject.py
 
 Implement (data) class for handling an Australian Curriculum Learning Area
 
@@ -27,25 +27,33 @@ from typing import Any
 from datetime import datetime
 
 @dataclass
-class acLearningArea:
+class acSubject:
     #-- tmp storage of the RDFLib node object
     node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None
-    dateModified: datetime = None
     abbreviation: str = None
+    dateModified : datetime = None
+
+    yearLevels : dict = None
     
-    def __init__(self, subjectId, title, dateModified, abbreviation):
+    def __init__(self, subjectId, title, abbreviation, dateModified):
         self.subjectId = subjectId
         self.title = title
-        self.dateModified = dateModified
         self.abbreviation = abbreviation
+        self.dateModified = dateModified
+
+        self.yearLevels = {}
 
     def __str__(self) -> str:
-        #-- create a string representation of the dateModified date object
-        return f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
- 
+        representation = f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
+
+        for yearLevelTitle in self.yearLevels.keys():
+            representation += f"\n\t{self.yearLevels[yearLevelTitle]}"
+        
+        return representation
+
     @property
     def dateModified(self):
         """
@@ -59,3 +67,4 @@ class acLearningArea:
         Convert the string value (e.g. 2021-09-28T09:27:45+00:00) into a datetime object
         """
         self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z") 
+ 

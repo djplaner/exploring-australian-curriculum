@@ -25,9 +25,9 @@ import logging
 
 from pprint import pprint
 
-##-- add the ../lib folder into include path 
+##-- add the ../src folder into include path 
 import sys
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'lib'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from australianCurriculum import australianCurriculum 
 

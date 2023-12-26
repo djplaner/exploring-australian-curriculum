@@ -29,6 +29,10 @@ from rdflib.namespace import RDF
 from rdflib.plugin import register, Serializer, Parser
 
 from acLearningArea import acLearningArea
+from acYearLevel import acYearLevel
+from acSubject import acSubject
+
+from pprint import pprint
 
 
 @dataclass
@@ -43,7 +47,7 @@ class australianCurriculum:
     subjects: dict = None
     contentDescriptions: dict = None
 
-    def __init__(self, fileName):
+    def __init__(self, fileName = None):
 
         #-- used to contain pointers to nodes in the graph for
         # - learningArea - should only be one
@@ -54,18 +58,23 @@ class australianCurriculum:
         }
 
         self.learningAreas = {}
+        self.subjects = {}
 
+        #-- Configure some namespace shortcuts
+        self.asnNameSpace = Namespace("http://purl.org/ASN/schema/core/")
+        self.statementNotation = self.asnNameSpace.statementNotation
+        self.statementLabel = self.asnNameSpace.statementLabel
+
+        if fileName is not None:
+            self.loadFile(fileName)
+
+    def loadFile(self, fileName):
         #-- test if fileName parameter is a valid, readable file
         if not os.path.isfile(fileName):
             raise ValueError(f"File {fileName} does not exist or is not readable")
 
         self.fileName = fileName
         self.generateGraphObject()
-        
-        #-- Configure some namespace shortcuts
-        self.asnNameSpace = Namespace("http://purl.org/ASN/schema/core/")
-        self.statementNotation = self.asnNameSpace.statementNotation
-        self.statementLabel = self.asnNameSpace.statementLabel
 
         #-- walk the graph and generate matching objects
         self.getRoot()
@@ -77,16 +86,14 @@ class australianCurriculum:
         """
 
         representation = f"""
-File name {self.fileName}
 Number of subjects: {len(self.graph)}
 Root subject {self.root}"""
 
         for learningAreaTitle in self.learningAreas.keys():
-            representation += f"\nLearning Area: {learningAreaTitle}"
-            representation += self.learningAreas[learningAreaTitle].__str__()
-#        for subject in self.nodes["subjects"]:
-#            subjectTitle = self.graph.value(subject=subject, predicate=URIRef("http://purl.org/dc/terms/title"))
-#            representation += f"\n - Subject: {subjectTitle}"
+            representation += f"\nLearning Area: {self.learningAreas[learningAreaTitle].__str__()}"
+
+        for subjectTitle in self.subjects.keys():
+            representation += f"\n  - subject: {self.subjects[subjectTitle].__str__()}"
 
         return representation
             
@@ -135,12 +142,10 @@ Root subject {self.root}"""
         2. add any top level stuff???? 
         """
 
-        print("----- parse the graph")
+        self.parseLearningAreas()
+        self.parseSubjects()
 
-        self.identifyLearningAreas()
-#        self.identifySubjects()
-
-    def identifyLearningAreas(self):
+    def parseLearningAreas(self):
         """
         Extract all nodes for with statementLabel == "Learning Area" and stick in the
         self.nodes["learningArea"] variable
@@ -166,18 +171,60 @@ Root subject {self.root}"""
             raise ValueError("More than one learning area found")
 
 
-    def identifySubjects(self):
+    def parseSubjects(self):
         """
-        Identify all nodes with statementLabel == "Subject" and stick in the self.nodes["subjects"] array
+        Grab and parse all the nodes with statementlabel "subject" into acSubject objects
+
+        Attributes of interest
+        - title (of subject) - dcterms:title 
+        - abbreviation - statementNotation
+
+        TODO
+        - Eventually parse the levels and all those components
         """
 
         subjects = self.graph.subjects(
             predicate=self.statementLabel, object=Literal("Subject", lang="en-au"))
         
         for subject in subjects:
-            self.nodes["subjects"].append(subject)
-            
+            title = self.graph.value(subject=subject, predicate=URIRef("http://purl.org/dc/terms/title"))
+            abbreviation = self.graph.value(subject=subject, predicate=self.statementNotation)
+            dateModified = self.graph.value(subject=subject, predicate=URIRef("http://purl.org/dc/terms/modified"))
 
+            self.subjects[title] = acSubject(subject, title, abbreviation, dateModified)
+
+            #-- for each subject, start parsing the year levels
+            # - pass in the node and the title (for the subjects dict) and
+            #   recurse down the graph using date methods for the year level class
+            #   to add new classes for achievement standards and content descriptions
+            self.parseYearLevel(subject, title)
+
+    def parseYearLevel(self, subjectId, titleOfSubject):
+        """
+        Called by parseSubjects, given a particular subject id in the graph and the title for the
+        Australian Curriculum subject, need to walk the graph hasChild etc from the subject
+
+        """
+
+        #-- get all the year level nodes
+        #   predicate isChildOf and object is the subject
+        yearLevelNodes = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=subjectId)
+
+        for yearLevelNode in yearLevelNodes:
+            #-- extract the title, dateModified, and abbreviation from the node
+            title = self.graph.value(subject=yearLevelNode, predicate=URIRef("http://purl.org/dc/terms/title"))
+            dateModified = self.graph.value(subject=yearLevelNode, predicate=URIRef("http://purl.org/dc/terms/modified"))
+            # abbreviation is in the statementNotation predicate
+            abbreviation = self.graph.value(subject=yearLevelNode, predicate=self.statementNotation)
+            yearLevel = acYearLevel(yearLevelNode, title, abbreviation, dateModified) 
+            self.subjects[titleOfSubject].yearLevels[title] = yearLevel
+
+            #-- TODO add the achievement standard children for this year level
+
+            
+            #-- TODO add the content description children for this year level
+            
 
     def walkTheGraph(self, subjectId=None, depth=0):
         """
