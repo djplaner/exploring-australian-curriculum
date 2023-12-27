@@ -51,6 +51,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from australianCurriculum import australianCurriculum 
 from acContentDescription import acContentDescription
+from acYearLevel import acYearLevel
+
+global SECONDARY 
+SECONDARY = True
 
 def parseArgs():
     """
@@ -77,6 +81,26 @@ def generateAC(args) -> australianCurriculum:
         ac.addRdfFile(file)
 
     return ac
+
+def includeYearLevel( yearLevel: acYearLevel ) -> bool:
+    """
+    Return true iff the given year level should be included
+    if SECONDARY is true, then include years from 7 onward
+    if SECONDARY is false, then no check
+    """
+
+    if not SECONDARY:
+        return True
+
+    #-- extract a list of any numbers included in yearLevel.title
+    years = [int(s) for s in yearLevel.title.split() if s.isdigit()]
+
+    #-- if no numbers, must be foundation - not secondary
+    if len(years)==0:
+        return False
+
+    #-- return true iff all years are equal to or greater than 7
+    return all(year >= 7 for year in years)
 
 def writeMarkdown( ac ) -> None:
     """
@@ -107,28 +131,46 @@ See also: [[australian-curriculum]], [[teaching]]
 
             #-- year levels
             for yearLevel in subject.yearLevels.values():
+                #-- only include year levels if chosen by globals
+                if not includeYearLevel( yearLevel):
+                    continue
+
                 learningAreasMd.write(f"#### {yearLevel.title}\n\n")
 
                 #-- Achievement standard - need to do an accordion?
                 asTitle = str(yearLevel.achievementStandard.title)
                 #-- turn any \n in asTitle into double \n
-                asTitle = asTitle.replace("\n", "\n\n")
-                learningAreasMd.write(asTitle)
-                learningAreasMd.write("\n\n")
+                asTitle = asTitle.replace("\n", "\n\n\t")
+                # add a \t to the beginning of each line in asTitle
+                
+                learningAreasMd.write(f""" 
+=== "Achievement Standard"
+
+\t{asTitle}
+
+""")
+
+#                learningAreasMd.write(asTitle)
+#                learningAreasMd.write("\n\n")
 
                 for component in yearLevel.achievementStandard.components.values():
-                    learningAreasMd.write(f"- _{str(component.abbreviation)}_ - {str(component.title)}\n")
+                    learningAreasMd.write(f"\t - _{str(component.abbreviation)}_: {str(component.title)}\n")
 
-                learningAreasMd.write("\n")
+                learningAreasMd.write(f""" 
+
+=== "Content Descriptions"
+
+""")
+
 
                 #-- strands and sub-strands
                 folder = os.path.join(args.outputFolder, learningAreaFolder)
 
                 for strand in yearLevel.strands.values():
-                    learningAreasMd.write(f"##### {strand.title}\n\n")
+                    learningAreasMd.write(f"\t**{strand.title}**\n\n")
 
                     for subStrand in strand.subStrands.values():
-                        learningAreasMd.write(f"###### {subStrand.title}\n\n")
+                        learningAreasMd.write(f"\t**_{subStrand.title}_**\n\n")
 
                         writeContentDescriptionMarkdown( subStrand, folder, learningAreasMd )
 
@@ -147,17 +189,17 @@ def writeContentDescriptionMarkdown( strand, folder, learningAreasMd ) -> None:
     Write the content descriptions for a strand or sub-strand
     """
 
-    learningAreasMd.write('\n<div class="grid cards" markdown>\n')
+    learningAreasMd.write('\n\t<div class="grid cards" markdown>\n')
 
     for cd in strand.contentDescriptions.values():
         learningAreasMd.write(f"""
-- __[[{cd.abbreviation}]]__ 
+\t - __[[{cd.abbreviation}]]__ 
 
-    {cd.title}
+\t    {cd.title}
 
 """)
 
-    learningAreasMd.write('\n</div>\n')
+    learningAreasMd.write('\n\t</div>\n')
 
     """contentDescriptions = list(strand.contentDescriptions.values())
     numCdRows = len(contentDescriptions) / 5
