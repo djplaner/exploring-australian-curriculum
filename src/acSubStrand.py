@@ -26,15 +26,14 @@ from dataclasses import dataclass
 from typing import Any
 
 from datetime import datetime
+from acNode import acNode
 
 @dataclass
-class acSubStrand:
+class acSubStrand(acNode):
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None # the actual detail/description of the strand
     abbreviation: str = None
-    #description: str = None
-    dateModified : datetime = None
     nominalYearLevel : str = None
 
     contentDescriptions : dict = None # keyed on abbreviation of the contentDescription node
@@ -56,22 +55,3 @@ class acSubStrand:
             representation += f"\n\t\t\t{self.contentDescriptions[cd]}"
 
         return representation
-
-    @property
-    def dateModified(self):
-        """
-        Return the dateModified as a string
-        """
-        return self._dateModified.strftime("%Y-%m-%d %H:%M:%S")
-
-    @dateModified.setter
-    def dateModified(self, value):
-        """
-        Convert the string value (e.g. 2021-09-28T09:27:45+00:00) into a datetime object
-        """
-        try:
-            self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z") 
-        except: 
-            # there's a bit of variety in the AC rdf files
-            self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%f%z")
- 

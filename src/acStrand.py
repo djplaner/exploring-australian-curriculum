@@ -27,18 +27,22 @@ from typing import Any
 
 from datetime import datetime
 
+from acNode import acNode
+
 @dataclass
-class acStrand:
+class acStrand(acNode):
     #-- tmp storage of the RDFLib node object
     node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None # the actual detail/description of the strand
     abbreviation: str = None
-    #description: str = None
     dateModified : datetime = None
     nominalYearLevel : str = None
 
+    #-- some learning areas don't have sub-strands, hence contentDescriptions
+    #   get added here
+    contendDescriptions : dict = None
     subStrands : dict = None # keyed on abbreviation of the subStrand node
     
     def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel):
@@ -49,6 +53,7 @@ class acStrand:
         self.nominalYearLevel = nominalYearLevel
 
         self.subStrands = {}
+        self.contentDescriptions = {}
 
     def __str__(self) -> str:
         representation = f"""- strand {self.abbreviation} - {self.title} modified {self.dateModified}"""
@@ -56,19 +61,7 @@ class acStrand:
         for subStrand in self.subStrands.keys():
             representation += f"\n\t\t- subStrand {self.subStrands[subStrand]}"
 
+        for cd in self.contentDescriptions.keys():
+            representation += f"\n\t\t- content description {self.contentDescriptions[cd]}"
+
         return representation
-
-    @property
-    def dateModified(self):
-        """
-        Return the dateModified as a string
-        """
-        return self._dateModified.strftime("%Y-%m-%d %H:%M:%S")
-
-    @dateModified.setter
-    def dateModified(self, value):
-        """
-        Convert the string value (e.g. 2021-09-28T09:27:45+00:00) into a datetime object
-        """
-        self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z") 
- 

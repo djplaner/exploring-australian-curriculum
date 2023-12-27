@@ -19,7 +19,9 @@
 
 ## v9 Curriculum data
 
-[Available from curriculum site](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/002-exploring-oz-dev-log/)
+Version 9 of the AC provides [machine readable data](https://www.scootle.edu.au/ec/p/mrac_details) for learning areas, general capabilities, and cross-curriculum priorities in HTML, RDF/XML, JSON LD, and SPARQL formats.
+
+Sample RDF files in the v9 folder
 
 ## v8.4 Curriculum data
 

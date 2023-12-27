@@ -26,8 +26,10 @@ from typing import Any
 
 from datetime import datetime
 
+from acNode import acNode
+
 @dataclass
-class acSubject:
+class acSubject(acNode):
     #-- tmp storage of the RDFLib node object
     node: Any = None
     #-- parsed out Oz curriculum values
@@ -53,18 +55,3 @@ class acSubject:
             representation += f"\n\t{self.yearLevels[yearLevelTitle]}"
         
         return representation
-
-    @property
-    def dateModified(self):
-        """
-        Return the dateModified as a string
-        """
-        return self._dateModified.strftime("%Y-%m-%d %H:%M:%S")
-
-    @dateModified.setter
-    def dateModified(self, value):
-        """
-        Convert the string value (e.g. 2021-09-28T09:27:45+00:00) into a datetime object
-        """
-        self._dateModified = datetime.strptime(value, "%Y-%m-%dT%H:%M:%S%z") 
- 

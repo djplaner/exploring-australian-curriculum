@@ -16,12 +16,18 @@
 """
 acLearningArea.py 
 
-Define Python class - asLearningArea - that will parse an Australian Curriuclum (v9) RDF file for a learning area into an Python object
+Python class - asLearningArea - which can currently parse multiple AC (v9) RDF files for learning areas into a single Python object (with various component objects).
 
 Current design assumptions
 - all the RDF parsing work is done in this class
 - it creates various AC specific objects based on related classes
 - all are implemented as @dataclass
+
+TODO
+
+- if and how to handle general capabilities and cross-curriculum priorities
+- provide methods to summarise the data in the object 
+- methods to allow more direct querying of the contents (learning areas, subjects, content descriptions)
 """
 
 from dataclasses import dataclass
@@ -30,8 +36,6 @@ from typing import Any
 import os
 
 from rdflib import Graph, URIRef, Literal, Namespace
-from rdflib.namespace import RDF
-from rdflib.plugin import register, Serializer, Parser
 
 from acLearningArea import acLearningArea
 from acYearLevel import acYearLevel
@@ -43,60 +47,30 @@ from acSubStrand import acSubStrand
 from acContentDescription import acContentDescription
 from acElaboration import acElaboration
 
-from pprint import pprint
-
-
 @dataclass
 class australianCurriculum:
-    """ early processing type data structures
-    - some of thse (e.g. nodes and root) may have to go away
-    """
-    nodes : dict  # points to nodes in graph (learningArea and subjects)
-    root : Any = None # root node of graph, feels kludgy
-    graph: Any = None # the RDFLib graph object
-    # Currently file being parsed TODO remove as we're going to handle multiple files
-    fileName: str = None 
+    # root node of graph, feels kludgy and may no longer work
+    # - was originally used for walkTheGraph which is probably due to deprecated
+    root : Any = None 
+    # the RDFLib graph object, all learning area RDF files are parsed into this
+    # - this may not be useful if we want to add general capabilities etc.
+    graph: Graph = None 
 
-    """ Storage for the curriculum objects
-    - This class will parse the RDF file creating the following objects 
-
-    australianCurriculum is made up of numerous learning areas. 
-    TODO use a "parseFile" method to allow multiple RDF files to be parsed
-    (because by default an AC RDF file only overs one learning area)"""
+    #-- all the learning areas, keyed by human readable name
+    #   - Each learning area acLearningArea object allows access to all info
+    #     about the learning area
     learningAreas: dict = None
-    """
-    Each learning area can have multiple subjects, which in turn contain most/all of the
-    data 
-    - yearLevels 
-        - achievement standards, 
-            - achievement standard components  
-        - strands 
-            - sub-strands (sub-strands are optional)
-                - content descriptions 
 
-    TODO
-    - need to figure out how to handle optional sub-strands
-    """
+    #-- TODO Possible ideas for global access to all
+    # - idea is that rather than recurse down the learningAreas objects we
+    #   want to directly access subjects, strands, content descriptions etc.
+    # - TODO in theory could just add them using the unique AC abbreviations
+    # - TODO  one question is how to get from these back to the parent hierarchy
     subjects: dict = None
-    #-- Each subject is made up of strands/sub-strands/content descriptors
-    # - store them in strands, but also update the content descriptions dict to point
-
-    #-- direct access dicts TODO
-    # - These are to make it easier to access specific AC components that are hidden away
-    #   in the class hierarchy above. keyed on the AC ids/abbreviations and linking to those
-    #   object components
     contentDescriptions: dict = None
     strands: dict = None 
 
     def __init__(self, fileName = None):
-
-        #-- used to contain pointers to nodes in the graph for
-        # - learningArea - should only be one
-        # - subjects - within the learning area, may be 0 or more
-        self.nodes = {
-            "learningArea": None,
-            "subjects": []
-        }
 
         self.learningAreas = {}
         self.subjects = {}
@@ -107,28 +81,29 @@ class australianCurriculum:
         self.statementLabel = self.asnNameSpace.statementLabel
 
         if fileName is not None:
-            self.loadFile(fileName)
+            self.addRdfFile(fileName)
 
-    def loadFile(self, fileName):
+    def addRdfFile(self, fileName) -> None:
         #-- test if fileName parameter is a valid, readable file
         if not os.path.isfile(fileName):
             raise ValueError(f"File {fileName} does not exist or is not readable")
 
-        self.fileName = fileName
-        self.generateGraphObject()
+#        self.fileName = fileName
+        self.generateGraphObject( fileName)
 
         #-- walk the graph and generate matching objects
         self.getRoot()
+        #-- TODO should parseGraph do something else??
         self.parseGraph()
 
-    def __str__(self):
+    def __str__(self) -> None:
         """
         Dump out a simple representation to stdout of the object
         """
 
         representation = f"""
-Number of subjects: {len(self.graph)}
-Root subject {self.root}"""
+Number of nodes: {len(self.graph)}
+Number of learning areas {len(self.learningAreas.keys())}"""
 
         for learningAreaTitle in self.learningAreas.keys():
             representation += f"\nLearning Area: {self.learningAreas[learningAreaTitle].__str__()}"
@@ -140,17 +115,19 @@ Root subject {self.root}"""
             
         
 
-    def generateGraphObject(self):
+    def generateGraphObject(self, fileName):
         """
         Attempt to create a RDFLib graph based on contents of fileName
         """
 
-        self.graph = Graph()
-        self.graph.parse(self.fileName, format="xml")
+        if self.graph is None:
+            self.graph = Graph()
+
+        self.graph.parse(fileName, format="xml")
 
         #-- did it work
         if len(self.graph) == 0:
-            raise ValueError(f"No data in graph {self.fileName}")
+            raise ValueError(f"No data in graph {fileName}")
 
     def getRoot(self): 
         """ 
@@ -169,8 +146,8 @@ Root subject {self.root}"""
 
         if count == 0:
             return ValueError("No root found")
-        elif count > 1:
-            return ValueError("More than one root found")
+#        elif count > 1:
+#            return ValueError("More than one root found")
 
     def parseGraph( self ):
         """
@@ -188,8 +165,7 @@ Root subject {self.root}"""
 
     def parseLearningAreas(self):
         """
-        Extract all nodes for with statementLabel == "Learning Area" and stick in the
-        self.nodes["learningArea"] variable
+        Extract all nodes for with statementLabel == "Learning Area" and 
         """
 
         learningAreaNodes = self.graph.subjects(
@@ -208,8 +184,8 @@ Root subject {self.root}"""
 
         if (found == 0):
             raise ValueError("No learning areas found")
-        if (found > 1):
-            raise ValueError("More than one learning area found")
+#        if (found > 1):
+#            raise ValueError("More than one learning area found")
 
 
     def parseSubjects(self):
@@ -238,7 +214,7 @@ Root subject {self.root}"""
             #   to add new classes for achievement standards and content descriptions
             self.parseYearLevel(subject, info['title'])
 
-    def parseYearLevel(self, subjectId, titleOfSubject):
+    def parseYearLevel(self, subjectId, titleOfSubject) -> None:
         """
         Called by parseSubjects, given a particular subject id in the graph and the title for the
         Australian Curriculum subject, need to walk the graph hasChild etc from the subject
@@ -262,11 +238,11 @@ Root subject {self.root}"""
             self.parseYearLevelStrands( yearLevel ) 
             
 
-    def parseYearLevelStrands(self, yearLevel):
+    def parseYearLevelStrands(self, yearLevel) -> None:
         """
         Given an acYearLevel object parse the graph to get all the 
         - strands 
-            - sub-strands
+            - sub-strands (these are optional)
                 - content descriptions for the year level
         """
 
@@ -286,10 +262,31 @@ Root subject {self.root}"""
                 info['modified'], info['nominalYearLevel']) 
             yearLevel.strands[str(info['title'])] = strand
 
-            #-- grab the sub-strands
-            self.parseStrandSubStrands(strand)
+            #-- get all the content description information for either the strand
+            #   or the sub-strand, depending on if the strand has sub-strands
+            if (self.strandHasSubStrands(strandNode)):
+                self.parseStrandSubStrands(strand)
+            else:
+                self.parseSubStrandContentDescriptions(strand)
 
-    def parseStrandSubStrands(self, strand):
+    def strandHasSubStrands(self, strandNode) -> bool:
+        """
+        Given a standNode, return true if there are and children of the strandNode that are sub-strands
+        """
+
+        #-- find all the children of strand node
+        children = self.graph.subjects(
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=strandNode)
+        
+        #-- check if any of them are sub-Strands
+        for child in children:
+            info = self.extractNodeInfo(child)
+            if str(info['statementLabel']) == "Sub-Strand":
+                return True
+
+        return False
+
+    def parseStrandSubStrands(self, strand) -> None:
         """
         Given a stand (from a particular year level) grab all 
         - sub-strands

@@ -14,9 +14,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-generateLearningArea.py --rdffile <pathToRdfFile> --outputFolder <pathToOutputFolder>
+generateLearningArea.py --rdffile <pathToRdfFile>,<pathToRDFFile> --outputFolder <pathToOutputFolder>
 
-Generate a collection markdown files containing information from the Australian Curriculum v9 RDF file for a specific learning area
+Generate a collection markdown files containing information from one or more Australian Curriculum v9 RDF file for a specific learning area
 """
 
 import os
@@ -37,7 +37,7 @@ def parseArgs():
     """
 
     parser = argparse.ArgumentParser(description="Recurse through an Oz Curriculum RDF file")
-    parser.add_argument("--rdffile", action="store", help="Path to the RDF file", required=True)
+    parser.add_argument("--rdffile", action="store", type=str, nargs="+", help="Path to the RDF file", required=True)
     parser.add_argument("--outputFolder", action="store", help="Path to the output folder", required=False)
 
     return parser.parse_args()
@@ -48,7 +48,10 @@ if __name__ == "__main__":
 
     args = parseArgs()
 
-    learningArea = australianCurriculum(args.rdffile)
+    learningArea = australianCurriculum()
+
+    for file in args.rdffile:
+        learningArea.addRdfFile(file)
 
     print(learningArea)
 
