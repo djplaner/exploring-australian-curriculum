@@ -26,13 +26,14 @@ from datetime import datetime
 
 @dataclass
 class acNode:
-    dateModified : datetime = None
+    dateModified : datetime 
 
     @property
     def dateModified(self):
         """
         Return the dateModified as a string
         """
+        print("called here")
         return self._dateModified.strftime("%Y-%m-%d %H:%M:%S")
 
     @dateModified.setter

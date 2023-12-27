@@ -50,6 +50,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from australianCurriculum import australianCurriculum 
+from acContentDescription import acContentDescription
 
 def parseArgs():
     """
@@ -83,9 +84,14 @@ def writeMarkdown( ac ) -> None:
     """
 
 
-    learningAreasMd = open(os.path.join(args.outputFolder, "learningAreas.md"), "w")
+    learningAreasMd = open(os.path.join(args.outputFolder, "v9-learning-areas.md"), "w")
 
-    learningAreasMd.write("# Learning Areas\n\n")
+    learningAreasMd.write("""
+# Learning Areas
+
+See also: [[australian-curriculum]], [[teaching]]
+
+""")
     
     for learningArea in ac.learningAreas.values():
         ## convert learning area title into a safe folder name 
@@ -93,13 +99,110 @@ def writeMarkdown( ac ) -> None:
         # create the folder if it doesn't exist
         os.makedirs(os.path.join(args.outputFolder, learningAreaFolder), exist_ok=True)
 
-        learningAreasMd.write(f"## Learning Area: {learningArea.title}\n\n")    
+        learningAreasMd.write(f"## {learningArea.title}\n\n")    
 
-#        pprint(learningArea)
-#        quit(1)
+        #-- subjects
+        for subject in learningArea.subjects.values():
+            learningAreasMd.write(f"### {subject.title}\n\n")
+
+            #-- year levels
+            for yearLevel in subject.yearLevels.values():
+                learningAreasMd.write(f"#### {yearLevel.title}\n\n")
+
+                #-- Achievement standard - need to do an accordion?
+                asTitle = str(yearLevel.achievementStandard.title)
+                #-- turn any \n in asTitle into double \n
+                asTitle = asTitle.replace("\n", "\n\n")
+                learningAreasMd.write(asTitle)
+                learningAreasMd.write("\n\n")
+
+                for component in yearLevel.achievementStandard.components.values():
+                    learningAreasMd.write(f"- _{str(component.abbreviation)}_ - {str(component.title)}\n")
+
+                learningAreasMd.write("\n")
+
+                #-- strands and sub-strands
+                folder = os.path.join(args.outputFolder, learningAreaFolder)
+
+                for strand in yearLevel.strands.values():
+                    learningAreasMd.write(f"##### {strand.title}\n\n")
+
+                    for subStrand in strand.subStrands.values():
+                        learningAreasMd.write(f"###### {subStrand.title}\n\n")
+
+                        writeContentDescriptionMarkdown( subStrand, folder, learningAreasMd )
+
+                    writeContentDescriptionMarkdown( strand, folder, learningAreasMd )
+
+                        #-- content descriptions
+#                        for contentDescription in subStrand.contentDescriptions.values():
+#                            learningAreasMd.write(f"[[{contentDescription.code}]] {contentDescription.description}\n\n")
+#
 
     #-- close the file
     learningAreasMd.close()
+
+def writeContentDescriptionMarkdown( strand, folder, learningAreasMd ) -> None:
+    """
+    Write the content descriptions for a strand or sub-strand
+    """
+
+    learningAreasMd.write('\n<div class="grid cards" markdown>\n')
+
+    for cd in strand.contentDescriptions.values():
+        learningAreasMd.write(f"""
+- __[[{cd.abbreviation}]]__ 
+
+    {cd.title}
+
+""")
+
+    learningAreasMd.write('\n</div>\n')
+
+    """contentDescriptions = list(strand.contentDescriptions.values())
+    numCdRows = len(contentDescriptions) / 5
+    row = 0
+
+    while row < numCdRows:
+        col = 0
+
+        learningAreasMd.write("| ")
+        while col < 5:
+            cdIndex = int(row * 5 + col)
+            if cdIndex < len(contentDescriptions):
+                contentDescription = contentDescriptions[cdIndex]
+                learningAreasMd.write(f"[[{contentDescription.abbreviation}]] | ")
+                #-- create folder for content description
+                writeContentDescriptionMdFile( contentDescription, folder )
+            else:
+                break
+            col += 1
+
+        learningAreasMd.write("\n")
+        row+=1
+    """
+    
+def writeContentDescriptionMdFile( contentDescription : acContentDescription, folder) -> None:
+    """
+    WRite the content description's markdown file in the given folder/abbreviation
+    """
+
+    mdFile = open(os.path.join(folder, f"{contentDescription.abbreviation}.md"), "w")
+
+    mdFile.write(f"""
+# {contentDescription.abbreviation} 
+
+See also: [[v9-learning-areas]]
+
+""")
+    mdFile.write(f"> {contentDescription.title}\n\n")
+    mdFile.write("Elaborations\n\n")
+
+    for elaboration in contentDescription.elaborations.values():
+        mdFile.write(f"\n- _{elaboration.abbreviation}_ - {elaboration.title}\n")
+
+    mdFile.close()
+
 
 if __name__ == "__main__":
 
@@ -107,8 +210,8 @@ if __name__ == "__main__":
 
     ac = generateAC(args)
 
-#    writeMarkdown( ac ) 
+    writeMarkdown( ac ) 
 
-    print(ac)
+#    print(ac)
 
 #    learningArea.walkTheGraph()
