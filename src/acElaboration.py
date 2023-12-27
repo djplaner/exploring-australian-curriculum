@@ -29,12 +29,10 @@ from acNode import acNode
 
 @dataclass
 class acElaboration(acNode):
-    #-- parsed out Oz curriculum values
     # the subjectId of the node in the graph/actually the RDFlib node
     subjectId : str = None 
     title: str = None # the actual detail/description of the content descriptor
     abbreviation: str = None
-    #description: str = None
     dateModified : datetime = None
     nominalYearLevel : str = None
 

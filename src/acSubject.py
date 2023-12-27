@@ -30,8 +30,6 @@ from acNode import acNode
 
 @dataclass
 class acSubject(acNode):
-    #-- tmp storage of the RDFLib node object
-    node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None
@@ -49,7 +47,8 @@ class acSubject(acNode):
         self.yearLevels = {}
 
     def __str__(self) -> str:
-        representation = f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
+
+        representation = f"""Subject - {self.title} ({self.abbreviation}) modified {self.dateModified}"""
 
         for yearLevelTitle in self.yearLevels.keys():
             representation += f"\n\t{self.yearLevels[yearLevelTitle]}"

@@ -29,8 +29,6 @@ from acNode import acNode
 
 @dataclass
 class acAchievementStandard(acNode):
-    #-- tmp storage of the RDFLib node object
-    node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None # the actual detail/description of the achievement standard
@@ -51,7 +49,7 @@ class acAchievementStandard(acNode):
         self.components = {}
 
     def __str__(self) -> str:
-        representation = f"""{self.abbreviation} - {self.title} modified {self.dateModified}"""
+        representation = f"""Achievement standard - {self.abbreviation} - {self.title} modified {self.dateModified}"""
 
         for component in self.components.keys():
             representation += f"\n\t\t{self.components[component]}"

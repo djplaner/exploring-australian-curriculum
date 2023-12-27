@@ -28,15 +28,17 @@ from datetime import datetime
 
 from acNode import acNode
 
+from pprint import pprint
+
 @dataclass
 class acLearningArea(acNode):
-    #-- tmp storage of the RDFLib node object
-    node: Any = None
     #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None
     dateModified: datetime = None
     abbreviation: str = None
+
+    subjects : dict = None #-- dictionary of subjects keyed by subjectId
     
     def __init__(self, subjectId, title, dateModified, abbreviation):
         self.subjectId = subjectId
@@ -44,7 +46,14 @@ class acLearningArea(acNode):
         self.dateModified = dateModified
         self.abbreviation = abbreviation
 
+        self.subjects = {}
+
     def __str__(self) -> str:
         #-- create a string representation of the dateModified date object
-        return f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
+        representation = f"""\tLearning Area {self.title} ({self.abbreviation}) modified {self.dateModified}"""
+
+        for subject in self.subjects.keys():
+            representation += f"\n\t{self.subjects[subject]}"
+
+        return representation
  

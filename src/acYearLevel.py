@@ -29,9 +29,6 @@ from acNode import acNode
 
 @dataclass
 class acYearLevel(acNode):
-    #-- tmp storage of the RDFLib node object
-    node: Any = None
-    #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None
     abbreviation: str = None
@@ -52,13 +49,13 @@ class acYearLevel(acNode):
         self.strands = {}
 
     def __str__(self) -> str:
-        representation = f"""{self.title} ({self.abbreviation}) modified {self.dateModified}"""
+        representation = f"""\tYearLevel - {self.title} ({self.abbreviation}) modified {self.dateModified}"""
 
-        representation += "\n\t --------- achievementStandard ---------"
+        representation += "\n\t\t--------- achievementStandard ---------"
 
         representation += f"""\n\t\t{self.achievementStandard}"""
 
-        representation += "\n\t --------- Strands ---------"
+        representation += "\n\t\t --------- Strands ---------"
 
         for strand in self.strands.keys():
             representation += f"\n\t\t{self.strands[strand]}"

@@ -47,6 +47,8 @@ from acSubStrand import acSubStrand
 from acContentDescription import acContentDescription
 from acElaboration import acElaboration
 
+from pprint import pprint
+
 @dataclass
 class australianCurriculum:
     # root node of graph, feels kludgy and may no longer work
@@ -161,7 +163,7 @@ Number of learning areas {len(self.learningAreas.keys())}"""
         """
 
         self.parseLearningAreas()
-        self.parseSubjects()
+#        self.parseSubjects()
 
     def parseLearningAreas(self):
         """
@@ -179,7 +181,9 @@ Number of learning areas {len(self.learningAreas.keys())}"""
             learningArea = acLearningArea(
                 learningAreaNode, info['title'], info['modified'], info['statementNotation']) 
 
-            self.learningAreas[info['title']] = learningArea
+            self.learningAreas[str(info['title'])] = learningArea
+
+            self.parseLearningAreasSubjects(learningArea)
             found+=1
 
         if (found == 0):
@@ -188,9 +192,9 @@ Number of learning areas {len(self.learningAreas.keys())}"""
 #            raise ValueError("More than one learning area found")
 
 
-    def parseSubjects(self):
+    def parseLearningAreasSubjects(self, learningArea):
         """
-        Grab and parse all the nodes with statementlabel "subject" into acSubject objects
+        For a given learningArea, parse all the nodes with statementlabel "subject" into acSubject objects
 
         Attributes of interest
         - title (of subject) - dcterms:title 
@@ -200,31 +204,40 @@ Number of learning areas {len(self.learningAreas.keys())}"""
         - Eventually parse the levels and all those components
         """
 
+        #-- get all the subject nodes that a children of the learning area
+        #   - predicate isChildOf and object is the learning area
         subjects = self.graph.subjects(
-            predicate=self.statementLabel, object=Literal("Subject", lang="en-au"))
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=learningArea.subjectId)
+#        subjects = self.graph.subjects(
+#            predicate=self.statementLabel, object=Literal("Subject", lang="en-au"))
         
         for subject in subjects:
             info = self.extractNodeInfo(subject)
-            self.subjects[info['title']] = acSubject(
+            #-- skip if the statementLabel is not "Subject"
+            if str(info['statementLabel']) != "Subject":
+                continue
+
+            subjectNode = acSubject(
                 subject, info['title'], info['statementNotation'], info['modified'])
+            learningArea.subjects[str(info['title'])] = subjectNode
 
             #-- for each subject, start parsing the year levels
             # - pass in the node and the title (for the subjects dict) and
             #   recurse down the graph using date methods for the year level class
             #   to add new classes for achievement standards and content descriptions
-            self.parseYearLevel(subject, info['title'])
+            #self.parseYearLevel(subject, str(info['title']))
+            self.parseYearLevel(subjectNode )
 
-    def parseYearLevel(self, subjectId, titleOfSubject) -> None:
+    def parseYearLevel(self, subject : acSubject) -> None:
         """
-        Called by parseSubjects, given a particular subject id in the graph and the title for the
-        Australian Curriculum subject, need to walk the graph hasChild etc from the subject
-
+        Called by parseSubjects, given a particular acSubject object parse all the
+        year levels that are children of the subject
         """
 
         #-- get all the year level nodes
         #   predicate isChildOf and object is the subject
         yearLevelNodes = self.graph.subjects(
-            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=subjectId)
+            predicate=URIRef("http://purl.org/gem/qualifiers/isChildOf"), object=subject.subjectId)
 
         for yearLevelNode in yearLevelNodes:
             info = self.extractNodeInfo(yearLevelNode)
@@ -232,7 +245,8 @@ Number of learning areas {len(self.learningAreas.keys())}"""
             yearLevel = acYearLevel(
                 yearLevelNode, info['title'], info['statementNotation'], info['modified']) 
 
-            self.subjects[titleOfSubject].yearLevels[info['title']] = yearLevel
+            subject.yearLevels[info['title']] = yearLevel
+            #self.subjects[str(subject.title)].yearLevels[info['title']] = yearLevel
 
             self.parseYearLevelAchievementStandards( yearLevel )
             self.parseYearLevelStrands( yearLevel ) 

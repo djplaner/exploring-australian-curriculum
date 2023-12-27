@@ -35,12 +35,10 @@ from acNode import acNode
 
 @dataclass
 class acContentDescription(acNode):
-    #-- parsed out Oz curriculum values
     # the subjectId of the node in the graph/actually the RDFlib node
     subjectId : str = None 
     title: str = None # the actual detail/description of the content descriptor
     abbreviation: str = None
-    #description: str = None
     dateModified : datetime = None
     nominalYearLevel : str = None
 
@@ -62,6 +60,6 @@ class acContentDescription(acNode):
         representation = f"""- content descriptor {self.abbreviation} - {self.title} modified {self.dateModified}"""
 
         for elaboration in self.elaborations.keys():
-            representation += f"\n\t\t\t - elaboration {self.elaborations[elaboration]}"
+            representation += f"\n\t\t\t\t- elaboration {self.elaborations[elaboration]}"
 
         return representation

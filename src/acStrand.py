@@ -31,9 +31,6 @@ from acNode import acNode
 
 @dataclass
 class acStrand(acNode):
-    #-- tmp storage of the RDFLib node object
-    node: Any = None
-    #-- parsed out Oz curriculum values
     subjectId : str = None # the subjectId of the node in the graph
     title: str = None # the actual detail/description of the strand
     abbreviation: str = None
@@ -62,6 +59,6 @@ class acStrand(acNode):
             representation += f"\n\t\t- subStrand {self.subStrands[subStrand]}"
 
         for cd in self.contentDescriptions.keys():
-            representation += f"\n\t\t- content description {self.contentDescriptions[cd]}"
+            representation += f"\n\t\t\t {self.contentDescriptions[cd]}"
 
         return representation
