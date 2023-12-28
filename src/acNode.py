@@ -33,7 +33,6 @@ class acNode:
         """
         Return the dateModified as a string
         """
-        print("called here")
         return self._dateModified.strftime("%Y-%m-%d %H:%M:%S")
 
     @dateModified.setter

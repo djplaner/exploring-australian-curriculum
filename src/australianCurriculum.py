@@ -218,7 +218,8 @@ Number of learning areas {len(self.learningAreas.keys())}"""
                 continue
 
             subjectNode = acSubject(
-                subject, info['title'], info['statementNotation'], info['modified'])
+                subject, info['title'], info['statementNotation'], info['modified'],
+                learningArea)
             learningArea.subjects[str(info['title'])] = subjectNode
 
             #-- for each subject, start parsing the year levels
@@ -243,7 +244,8 @@ Number of learning areas {len(self.learningAreas.keys())}"""
             info = self.extractNodeInfo(yearLevelNode)
 
             yearLevel = acYearLevel(
-                yearLevelNode, info['title'], info['statementNotation'], info['modified']) 
+                yearLevelNode, info['title'], info['statementNotation'], info['modified'],
+                info['description'], subject) 
 
             subject.yearLevels[info['title']] = yearLevel
             #self.subjects[str(subject.title)].yearLevels[info['title']] = yearLevel
@@ -273,7 +275,7 @@ Number of learning areas {len(self.learningAreas.keys())}"""
 
             strand = acStrand(
                 strandNode, info['title'], info['statementNotation'], 
-                info['modified'], info['nominalYearLevel']) 
+                info['modified'], info['nominalYearLevel'], yearLevel) 
             yearLevel.strands[str(info['title'])] = strand
 
             #-- get all the content description information for either the strand
@@ -319,7 +321,7 @@ Number of learning areas {len(self.learningAreas.keys())}"""
 
             subStrand = acSubStrand(
                 subStrandNode, info['title'], info['statementNotation'], 
-                str(info['modified']), info['nominalYearLevel']) 
+                str(info['modified']), info['nominalYearLevel'], strand) 
             strand.subStrands[str(info['title'])] = subStrand
 
             #-- grab the content descriptions
@@ -344,7 +346,8 @@ Number of learning areas {len(self.learningAreas.keys())}"""
 
             contentDescription = acContentDescription(
                 cdNode, info['title'], info['statementNotation'], 
-                str(info['modified']), info['nominalYearLevel'])
+                str(info['modified']), info['nominalYearLevel'],
+                subStrand)
 
             subStrand.contentDescriptions[str(info['statementNotation'])] = contentDescription
 
@@ -363,26 +366,34 @@ Number of learning areas {len(self.learningAreas.keys())}"""
         for cdExtraNode in cdExtraNodes:
             info = self.extractNodeInfo(cdExtraNode)
 
-            if str(info['statementLabel']) not in ["Elaboration", "Achievement Standard Component"]:
-                continue
-
             if str(info['statementLabel']) == "Elaboration":
                 elaboration = acElaboration(
                     cdExtraNode, info['title'], info['statementNotation'],
                     str(info['modified']), info['nominalYearLevel'])
 
                 contentDescription.elaborations[str(info['statementNotation'])] = elaboration
-            else:
+
+        #-- a content description may have an achievement standard component via
+        #   the hasLevel predicate. Get the objects for hasLevel on contentDescription
+        #   then get that subject and... 
+        #   - check the statementLabel is "Achievement Standard Component"
+        #   - add it to the contentDescription object
+        asComponents = self.graph.objects(
+            subject=contentDescription.subjectId, predicate=URIRef("http://purl.org/ASN/schema/core/hasLevel"))
+
+        for asComponent in asComponents:
+            info = self.extractNodeInfo(asComponent)
+
+            if str(info['statementLabel']) == "Achievement Standard Component":
                 achievementStandardComponent = acAchievementStandardComponent(
                     cdExtraNode, info['title'], info['statementNotation'],
                     str(info['modified']), info['nominalYearLevel'])
 
                 contentDescription.achievementStandardComponents[str(info['statementNotation'])] = achievementStandardComponent
+
+#                pprint(contentDescription)
+#                input("waiting")
             
-
-
-
-
     def parseYearLevelAchievementStandards(self, yearLevel):
         """
         Given an acYearLevel object, parse the graph to set the achievement standards object for all the "Achievement Standard" and "Achievement Standard Component" nodes

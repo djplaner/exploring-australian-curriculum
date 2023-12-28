@@ -28,6 +28,7 @@ from typing import Any
 from datetime import datetime
 
 from acNode import acNode
+from acYearLevel import acYearLevel
 
 @dataclass
 class acStrand(acNode):
@@ -36,18 +37,20 @@ class acStrand(acNode):
     abbreviation: str = None
     dateModified : datetime = None
     nominalYearLevel : str = None
+    yearLevel : acYearLevel = None # the yearLevel to which the strand belongs
 
     #-- some learning areas don't have sub-strands, hence contentDescriptions
     #   get added here
     contendDescriptions : dict = None
     subStrands : dict = None # keyed on abbreviation of the subStrand node
     
-    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel):
+    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel, yearLevel=None):
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
         self.nominalYearLevel = nominalYearLevel
+        self.yearLevel = yearLevel
 
         self.subStrands = {}
         self.contentDescriptions = {}

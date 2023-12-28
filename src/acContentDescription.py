@@ -41,17 +41,19 @@ class acContentDescription(acNode):
     abbreviation: str = None
     dateModified : datetime = None
     nominalYearLevel : str = None
+    strand: Any = None # acStrand or acSubStrand object to which this content description belongs
 
     elaborations : dict = None # keyed on abbreviation of the contentDescription node
     achievementStandardComponents : dict = None # keyed on abbreviation of the contentDescription node
     
-    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel):
+    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel, strand=None):
 
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
         self.nominalYearLevel = nominalYearLevel
+        self.strand = strand
 
         self.elaborations = {}
         self.achievementStandardComponents = {}
@@ -63,3 +65,39 @@ class acContentDescription(acNode):
             representation += f"\n\t\t\t\t- elaboration {self.elaborations[elaboration]}"
 
         return representation
+
+    def placeInHierarchy(self) -> dict:
+        """
+        Return a dict that identifies the content description's place in the hierarchy
+        {
+            "learningArea": learning area,
+            "subject" : subject,
+            "yearLevel" : year level ,
+            "strand" : strand,
+            "sub-strand" : sub-strand,
+        }
+        """
+
+        place = {
+            "learningArea": None, "yearLevel" : None, "subject" : None,
+            "strand" : None, "sub-strand" : None
+        }
+
+        # is self.strand an acStrand or an acSubStrand?
+        strand = None
+        if type(self.strand).__name__ == "acStrand":
+            place["strand"] = str(self.strand.title)
+            strand = self.strand
+        else:
+            place["sub-strand"] = str(self.strand.title)
+            place["strand"] = str(self.strand.strand.title)
+            strand = self.strand.strand
+
+        place["yearLevel"] = str(strand.yearLevel.title)
+        place["subject"] = str(strand.yearLevel.subject.title)
+        place["learningArea"] = str(strand.yearLevel.subject.learningArea.title)
+
+        return place
+
+
+        

@@ -27,6 +27,7 @@ from typing import Any
 from datetime import datetime
 
 from acNode import acNode
+from acLearningArea import acLearningArea
 
 @dataclass
 class acSubject(acNode):
@@ -35,14 +36,16 @@ class acSubject(acNode):
     title: str = None
     abbreviation: str = None
     dateModified : datetime = None
+    learningArea: acLearningArea = None
 
     yearLevels : dict = None
     
-    def __init__(self, subjectId, title, abbreviation, dateModified):
+    def __init__(self, subjectId, title, abbreviation, dateModified : str, learningArea = None):
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
+        self.learningArea = learningArea
 
         self.yearLevels = {}
 

@@ -10,10 +10,17 @@ This project has three initial goals:
 
 For more see [the project's design page](https://djplaner.github.io/memex/sense/Python/exploring-australian-curriculum/)
 
+## Useful outputs
+
+Late December 2023 see the first main "useful" output. An integration of the Australian Curriculum data into an instance of [the Foam personal knowledge management tool](https://foambubble.github.io/). A set of Python classes (see the `src` folder) were created to parse RDF files from the Australian Curriculum site and generate a set of markdown files as expected by Foam and [Material for MkDocs](https://squidfunk.github.io/mkdocs-material/) (the static site generation used by this version of Foam). 
+
+[The result](https://djplaner.github.io/memex/sense/Teaching/Curriculum/v9/v9-learning-areas/) is a set of pages that can be used to explore the Australian Curriculum in a more generative manner.
+
 ## Next steps?
 
-- Generating Python class for manipulating the Australian Curriculum structures
-- Explore how the approach used by [WebGlossary.info](https://webglossary.info/) might be integrated with memex
+- [X] Generating Python class for manipulating the Australian Curriculum structures
+- [ ] Explore other uses of the classes as I start teaching
+- [ ] Explore how the approach used by [WebGlossary.info](https://webglossary.info/) might be integrated with memex
 
 
 ## Current Status
@@ -24,7 +31,7 @@ For more see [the project's design page](https://djplaner.github.io/memex/sense/
 | [24 Sep 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/002-exploring-oz-dev-log/) | Pondering what to do with the v9 Australian Curriculum. Discovering that the use of RDF/semantic web etc has complicated the reusability. Barrier to entry quite high. Many connections. |
 | [Nov 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/003-exploring-oz-dev-log/) | Failed experiments with Neo4J |
 | [Early Dec 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/004-exploring-oz-dev-log/) | Coming to grips with using `rdflib` to recurse the structure | 
-| [Late Dec 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/005-exploring-oz-dev-log/) | Design of `acLearningArea.py` class and generating markdown pages |
+| [Late Dec 2023](https://djplaner.github.io/memex/sense/Python/exploring-oz-curriculum/005-exploring-oz-dev-log/) | Python classes parsing AC Learning Area RDF files and generating [markdown pages used by Foam](https://djplaner.github.io/memex/sense/Teaching/Curriculum/v9/v9-learning-areas/) |
 
 
 

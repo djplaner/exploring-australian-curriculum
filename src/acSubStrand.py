@@ -27,6 +27,7 @@ from typing import Any
 
 from datetime import datetime
 from acNode import acNode
+from acStrand import acStrand
 
 @dataclass
 class acSubStrand(acNode):
@@ -37,14 +38,18 @@ class acSubStrand(acNode):
     nominalYearLevel : str = None
 
     contentDescriptions : dict = None # keyed on abbreviation of the contentDescription node
+
+    strand : acStrand = None # the strand to which this sub-strand belongs
     
-    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel):
+    def __init__(self, subjectId, title, abbreviation, dateModified, nominalYearLevel, strand=None):
 
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
         self.nominalYearLevel = nominalYearLevel
+
+        self.strand = strand
 
         self.contentDescriptions = {}
 

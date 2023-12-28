@@ -26,6 +26,7 @@ from typing import Any
 from datetime import datetime
 
 from acNode import acNode
+from acSubject import acSubject
 
 @dataclass
 class acYearLevel(acNode):
@@ -34,22 +35,29 @@ class acYearLevel(acNode):
     abbreviation: str = None
     description: str = None
     dateModified : datetime = None
+    subject : acSubject = None # subject to which the year level belongs
 
     achievementStandard : Any = None # single acAchievementStandard object for year level
     # dict of acStrand objects keyed on the abbreviation of the strand
     # - will contain sub-strands, which in turn contain content descriptions
     strands : dict = None
     
-    def __init__(self, subjectId, title, abbreviation, dateModified):
+    def __init__(self, subjectId, title, abbreviation, dateModified, description, subject=None):
         self.subjectId = subjectId
         self.title = title
         self.abbreviation = abbreviation
         self.dateModified = dateModified
+        self.description = description
+        self.subject = subject
 
         self.strands = {}
 
     def __str__(self) -> str:
         representation = f"""\tYearLevel - {self.title} ({self.abbreviation}) modified {self.dateModified}"""
+
+        representation += "\n\t\t--------- Description ---------"
+        representation += f"""\n\t\t{self.description}"""
+
 
         representation += "\n\t\t--------- achievementStandard ---------"
 
