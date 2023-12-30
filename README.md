@@ -20,6 +20,7 @@ Late December 2023 see the first main "useful" output. An integration of the Aus
 
 - [X] Generating Python class for manipulating the Australian Curriculum structures
 - [ ] Explore other uses of the classes as I start teaching
+    - [ ] Visualising big ideas in mathematics with curriculum
 - [ ] Explore how the approach used by [WebGlossary.info](https://webglossary.info/) might be integrated with memex
 
 
@@ -41,18 +42,21 @@ Late December 2023 see the first main "useful" output. An integration of the Aus
 
     `source env/bin/activate`
 
-2. Install requirements.
+2. Install requirements. (prob. out of date)
 
     `pip install -r requirements.txt`
 
-3. Create database 
+
+Last two steps were for early work with datasette
+
+3. Create database (deprecated)
 
     ```bash
     cd datasette
     sh generate.sh
     ```
 
-4. Run datasette and follow instructions
+4. Run datasette and follow instructions (deprecated)
    
     `datasette curriculum.db`
 
